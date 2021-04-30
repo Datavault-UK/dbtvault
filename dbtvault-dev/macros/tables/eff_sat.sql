@@ -91,7 +91,8 @@ new_end_dated_records AS (
     SELECT DISTINCT
         h.{{ src_pk }},
         {{ dbtvault.alias_all(fk_cols, 'g') }},
-        h.EFFECTIVE_FROM AS {{ src_start_date }}, h.{{ src_source }}
+        h.{{ src_eff }} AS {{ src_start_date }},
+        h.{{ src_source }}
     FROM latest_open_eff AS h
     INNER JOIN links_to_end_date AS g
     ON g.{{ src_pk }} = h.{{ src_pk }}
