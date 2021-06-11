@@ -730,8 +730,6 @@ class DBTVAULTGenerator:
                           {source_model})   }}}}
         """
 
-        textwrap.dedent(template)
-
         self.template_to_file(template, model_name)
 
     def oos_sat(self, model_name, src_pk, src_hashdiff, src_payload, src_eff, src_ldts, src_source, source_model,
