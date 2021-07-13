@@ -567,10 +567,7 @@ class DBTVAULTGenerator:
             "sat": self.sat,
             "eff_sat": self.eff_sat,
             "t_link": self.t_link,
-            "xts": self.xts,
             "ma_sat": self.ma_sat,
-            "bridge": self.bridge,
-            "pit": self.pit
         }
 
         processed_metadata = self.process_structure_metadata(vault_structure=vault_structure, model_name=model_name,
@@ -732,28 +729,6 @@ class DBTVAULTGenerator:
 
         self.template_to_file(template, model_name)
 
-    def xts(self, model_name, src_pk, src_satellite, src_ldts, src_source, source_model, config=None, depends_on=""):
-        """
-        Generate a XTS template
-            :param model_name: Name of the model file
-            :param src_pk: Source pk
-            :param src_satellite: Satellite to track
-            :param src_ldts: Source load date timestamp
-            :param src_source: Source record source column
-            :param source_model: Model name to select from
-            :param config: Optional model config
-            :param depends_on: Optional forced dependency
-        """
-
-        template = f"""
-        {depends_on}
-        {{{{ config({config}) }}}}
-        {{{{ dbtvault.xts({src_pk}, {src_satellite}, {src_ldts}, {src_source},
-                          {source_model})   }}}}
-        """
-
-        self.template_to_file(template, model_name)
-
     def ma_sat(self, model_name, src_pk, src_cdk, src_hashdiff, src_payload,
                src_eff, src_ldts, src_source, source_model, config):
         """
@@ -779,51 +754,6 @@ class DBTVAULTGenerator:
 
         self.template_to_file(template, model_name)
 
-    def bridge(self, model_name, src_pk, as_of_dates_table, bridge_walk, stage_tables_ldts, source_model, src_ldts,
-               config, depends_on=""):
-        """
-        Generate a bridge model template
-            :param model_name: Name of the model file
-            :param src_pk: Source pk
-            :param as_of_dates_table: Name for the AS_OF table
-            :param bridge_walk: Dictionary of links and effectivity satellite reference mappings
-            :param stage_tables_ldts: List of stage table load date(time) stamps
-            :param source_model: Model name to select from
-            :param src_ldts: Source load date timestamp
-            :param config: Optional model config
-            :param depends_on: Optional forced dependency
-        """
-        template = f"""
-        {depends_on}
-        {{{{ config({config}) }}}}
-        {{{{ dbtvault.bridge({src_pk}, {as_of_dates_table}, {bridge_walk}, {stage_tables_ldts}, {src_ldts}, {source_model}) }}}}
-        """
-
-        self.template_to_file(template, model_name)
-
-    def pit(self, model_name, source_model, src_pk, as_of_dates_table, satellites,
-            stage_tables, src_ldts, depends_on="", config=None):
-        """
-        Generate a PIT template
-            :param model_name: Name of the model file
-            :param src_pk: Source pk
-            :param as_of_dates_table: Name for the AS_OF table
-            :param satellites: Dictionary of satellite reference mappings
-            :param src_ldts: Source Load Date timestamp
-            :param stage_tables: List of stage tables
-            :param source_model: Model name to select from
-            :param config: Optional model config
-            :param depends_on: Optional forced dependency
-        """
-
-        template = f"""
-        {depends_on}
-        {{{{ config({config}) }}}}
-        {{{{ dbtvault.pit({src_pk}, {as_of_dates_table}, {satellites},{stage_tables},{src_ldts}, {source_model}) }}}}
-        """
-
-        self.template_to_file(template, model_name)
-
     def process_structure_headings(self, context, model_name: str, headings: list):
         """
         Extract keys from headings if they are dictionaries
@@ -838,26 +768,7 @@ class DBTVAULTGenerator:
 
             if isinstance(item, dict):
 
-                if getattr(context, "vault_structure_type", None) == "pit" and "pit" in model_name.lower():
-                    dict_check = [next(iter(item))][0]
-                    if isinstance(item[dict_check], dict):
-                        satellite_columns_hk = [f"{col}_{list(item[col]['pk'].keys())[0]}" for col in item.keys()]
-                        satellite_columns_ldts = [f"{col}_{list(item[col]['ldts'].keys())[0]}" for col in item.keys()]
-                        processed_headings.extend(satellite_columns_hk + satellite_columns_ldts)
-
-                elif getattr(context, "vault_structure_type", None) == "bridge" and "bridge" in model_name.lower():
-
-                    dict_check = [next(iter(item))][0]
-                    if isinstance(item[dict_check], dict):
-                        link_columns_hk = [item[col]['bridge_link_pk'] for col in item.keys()]
-                        processed_headings.extend(link_columns_hk)
-
-                elif getattr(context, "vault_structure_type", None) == "xts" and "xts" in model_name.lower():
-                    satellite_columns = [f"{list(col.keys())[0]}" for col in list(item.values())[0].values()]
-
-                    processed_headings.extend(satellite_columns)
-
-                elif item.get("source_column", None) and item.get("alias", None):
+                if item.get("source_column", None) and item.get("alias", None):
 
                     processed_headings.append(item['source_column'])
 
@@ -882,11 +793,8 @@ class DBTVAULTGenerator:
             "link": "incremental",
             "sat": "incremental",
             "eff_sat": "incremental",
-            "xts": "incremental",
             "t_link": "incremental",
-            "ma_sat": "incremental",
-            "pit": "pit_incremental",
-            "bridge": "bridge_incremental"
+            "ma_sat": "incremental"
         }
 
         if config:
